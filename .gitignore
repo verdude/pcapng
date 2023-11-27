@@ -1,0 +1,4 @@
+*.pcap
+*.pcapng
+zig-out
+zig-cache
