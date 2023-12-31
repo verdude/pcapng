@@ -1,11 +1,27 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+const ArgIterator = std.process.ArgIterator;
+const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 
-pub fn main() !void {
-    const file = try std.fs.cwd().openFile("arc.pcapng", .{});
+fn getfirstarg(alloc: Allocator) ?[]const u8 {
+    var args = try ArgIterator.initWithAllocator(alloc);
+    defer args.deinit();
+
+    _ = args.next();
+    return args.next();
+}
+
+pub fn main() !u8 {
+    var buf: [512]u8 = undefined;
+    var fba = FixedBufferAllocator.init(&buf);
+    const alloc = fba.allocator();
+
+    const filename = getfirstarg(alloc) orelse {
+        std.log.err("Very bad news.", .{});
+        return 1;
+    };
+    const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
 
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-
-    try bw.flush();
+    return 0;
 }
