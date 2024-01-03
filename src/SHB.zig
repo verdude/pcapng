@@ -12,12 +12,20 @@ version: BlockMeta.PcapngVersion,
 section_length: i64,
 options: []BlockOption,
 
+pub const SHBError = error{
+    WrongBlockType,
+};
+
 pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     const fixed_meta_len = 4 * 6;
     const fixed_meta = try alloc.alloc(u8, fixed_meta_len);
     const uread = try reader.read(fixed_meta);
     if (uread != fixed_meta_len) {
         std.log.err("uh, not enough bits?", .{});
+    }
+    const btype = try BlockMeta.getblocktype(fixed_meta[0..4]);
+    if (btype != BlockMeta.BlockType.SHB) {
+        return BlockMeta.MetaError.WrongBlockType;
     }
     const version = BlockMeta.PcapngVersion{
         .major = @bitCast(fixed_meta[12..14].*),
@@ -50,7 +58,7 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
         try options.append(option);
     }
     return .{
-        .block_type = try BlockMeta.getblocktype(fixed_meta[0..4]),
+        .block_type = btype,
         .total_len = blocklen,
         .magic = try BlockMeta.getendianness(fixed_meta[8..12]),
         .version = version,
