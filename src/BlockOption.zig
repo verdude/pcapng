@@ -13,16 +13,19 @@ const Type = enum(u16) {
     opt_custom_safe_copy_octets = 2989,
     opt_custom_no_copy_string = 19372,
     opt_custom_no_copy_octets = 19373,
+    _,
 };
 
-const Option = struct {
-    type: Type,
-    length: u16,
-    value: []u8,
-};
+type: Type,
+length: u16,
+value: []const u8,
 
-fn readoption(optsbuf: []const u8) !BlockOption {
-    const tipe: BlockOption.Type = @bitCast(optsbuf[0..2].*);
-    std.log.info("Got block option type: {any}", .{tipe});
-    return BlockMeta.MetaError.BadMagic;
+pub fn loadoption(optsbuf: []const u8) !BlockOption {
+    const t: u16 = @bitCast(optsbuf[0..2].*);
+    std.log.info("type: {d}", .{t});
+    return .{
+        .type = @enumFromInt(t),
+        .length = @bitCast(optsbuf[2..4].*),
+        .value = optsbuf[4..],
+    };
 }

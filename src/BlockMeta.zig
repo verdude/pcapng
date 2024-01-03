@@ -1,6 +1,7 @@
 const BlockMeta = @This();
 const BlockOption = @import("BlockOption.zig");
 const std = @import("std");
+const mem = std.mem;
 
 pub const MetaError = error{
     BadTag,
@@ -39,3 +40,18 @@ pub fn getendianness(b: *[4]u8) BlockMeta.MetaError!BlockMeta.Endianness {
         return BlockMeta.MetaError.BadMagic;
     }
 }
+
+pub const PcapngVersion = struct {
+    major: u16,
+    minor: u16,
+    pub fn tostring(self: PcapngVersion, a: mem.Allocator) ![]const u8 {
+        return try std.fmt.allocPrint(
+            a,
+            "{d}.{d}",
+            .{ self.major, self.minor },
+        );
+    }
+    pub fn supported(self: PcapngVersion) bool {
+        return self.major == 1 and self.minor == 0;
+    }
+};

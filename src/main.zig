@@ -14,7 +14,7 @@ fn getfirstarg(alloc: Allocator) ?[]const u8 {
 }
 
 pub fn main() !u8 {
-    const len: u8 = 255;
+    const len: u16 = 1024;
     var buf = [1]u8{0} ** len;
     var fba = FixedBufferAllocator.init(&buf);
     const alloc = fba.allocator();
@@ -27,6 +27,7 @@ pub fn main() !u8 {
     defer file.close();
     //const filestat = file.stat();
     const reader = file.reader();
-    try SHB.parse(reader, alloc);
+    const shb = try SHB.parse(reader, alloc);
+    std.log.info("SHB: {any}", .{shb});
     return 0;
 }
