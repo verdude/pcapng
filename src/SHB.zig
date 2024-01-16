@@ -3,14 +3,22 @@ const SHB = @This();
 const std = @import("std");
 const mem = std.mem;
 const BlockMeta = @import("BlockMeta.zig");
-const BlockOption = @import("BlockOption.zig");
+const block_option = @import("BlockOption.zig");
+const BlockOption = block_option.BlockOption;
+const BlockOptionType = block_option.BlockOptionType;
+
+const Options = enum(u16) {
+    shb_hardware = 2,
+    shb_os = 3,
+    shb_userappl = 4,
+};
 
 block_type: BlockMeta.BlockType = BlockMeta.BlockType.SHB,
 total_len: u32,
 magic: BlockMeta.Endianness,
 version: BlockMeta.PcapngVersion,
 section_length: i64,
-options: []BlockOption,
+options: []BlockOption(Options),
 
 pub const SHBError = error{
     WrongBlockType,
@@ -49,10 +57,10 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
         );
         return BlockMeta.MetaError.PrematureEOF;
     }
-    var options = std.ArrayList(BlockOption).init(alloc);
+    var options = std.ArrayList(BlockOption(Options)).init(alloc);
     var i: u64 = 0;
     while (i < optionsbuf.len) {
-        const option = try BlockOption.loadoption(optionsbuf[i..]);
+        const option: BlockOption(Options) = try block_option.loadoption(optionsbuf[i..], Options);
         std.debug.assert(option.length > 0);
         i += option.length;
         try options.append(option);

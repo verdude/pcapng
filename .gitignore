@@ -2,3 +2,4 @@
 *.pcapng
 zig-out
 zig-cache
+tags
