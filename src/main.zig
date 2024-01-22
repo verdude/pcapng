@@ -5,6 +5,8 @@ const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const BlockMeta = @import("BlockMeta.zig");
 const SHB = @import("SHB.zig");
 
+pub const log_level: std.log.Level = .info;
+
 fn getfirstarg(alloc: Allocator) ?[]const u8 {
     var args = try ArgIterator.initWithAllocator(alloc);
     defer args.deinit();
@@ -27,7 +29,6 @@ pub fn main() !u8 {
     defer file.close();
     //const filestat = file.stat();
     const reader = file.reader();
-    const shb = try SHB.parse(reader, alloc);
-    std.log.info("SHB: {any}", .{shb});
+    _ = try SHB.parse(reader, alloc);
     return 0;
 }

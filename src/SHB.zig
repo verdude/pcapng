@@ -11,6 +11,13 @@ const Options = enum(u16) {
     shb_hardware = 2,
     shb_os = 3,
     shb_userappl = 4,
+    _,
+
+    pub fn examine(self: Options) void {
+        if (self == Options._) {
+            std.log.info("");
+        }
+    }
 };
 
 block_type: BlockMeta.BlockType = BlockMeta.BlockType.SHB,
@@ -47,6 +54,7 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
         return BlockMeta.MetaError.UnsupportedVersion;
     }
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
+    std.log.debug("SHB Block Len: {d}", .{blocklen});
     const optionslen = blocklen - fixed_meta_len - 4;
     const optionsbuf = try alloc.alloc(u8, optionslen);
     const ouread = try reader.read(optionsbuf);
@@ -60,10 +68,11 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     var options = std.ArrayList(BlockOption(Options)).init(alloc);
     var i: u64 = 0;
     while (i < optionsbuf.len) {
-        const option: BlockOption(Options) = try block_option.loadoption(optionsbuf[i..], Options);
+        const option = try block_option.loadoption(optionsbuf[i..], Options);
         std.debug.assert(option.length > 0);
         i += option.length;
         try options.append(option);
+        option.print();
     }
     return .{
         .block_type = btype,
