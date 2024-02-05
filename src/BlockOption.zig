@@ -24,9 +24,17 @@ pub fn BlockOption(comptime T: type) type {
         value: []const u8,
 
         pub fn print(self: BlockOption(T)) void {
-            std.log.info("BlockOptionType[{s}] {s}", .{ @tagName(self.type), self.value });
+            const botypeval: []const u8 = switch (self.type) {
+                .common => @tagName(self.type.common),
+                .block_specific => @tagName(self.type.block_specific),
+            };
+            std.log.info("BlockOptionType[{s},{s},{d}] {s}", .{ @tagName(self.type), botypeval, self.length, self.value });
         }
     };
+}
+
+pub fn paddedlen_bytes(bytes: u16) u16 {
+    return bytes + (bytes % 4);
 }
 
 const BlockOptionError = error{
@@ -38,8 +46,13 @@ pub fn loadoption(optsbuf: []const u8, comptime T: type) !BlockOption(T) {
     const n: u16 = @bitCast(optsbuf[0..2].*);
     const tag_type: ?Type = std.meta.intToEnum(Type, n) catch null;
     const BT = BlockOptionType(T);
+    const local = n & 0x8000 != 0; // msb set == local/non-portable option
+    const tag_value_len_bytes = 4;
     var ot: BT = undefined;
 
+    if (local) {
+        std.log.debug("local use option", .{});
+    }
     if (tag_type) |unwrapped| {
         ot = BT{ .common = unwrapped };
     } else {
@@ -50,14 +63,18 @@ pub fn loadoption(optsbuf: []const u8, comptime T: type) !BlockOption(T) {
     }
 
     const len: u16 = @bitCast(optsbuf[2..4].*);
-    if (len != optsbuf[4..].len) {
-        std.log.err("Expected len: {d}, found: {d}", .{ len, optsbuf[4..].len });
-        //return BlockOptionError.LengthMismatch;
+    const padded_len = paddedlen_bytes(len);
+    if (padded_len > optsbuf.len - tag_value_len_bytes) {
+        std.log.debug(
+            "Expected len: {d}, found: {d}",
+            .{ padded_len + tag_value_len_bytes, optsbuf.len },
+        );
+        return BlockOptionError.LengthMismatch;
     }
 
     return BlockOption(T){
         .type = ot,
-        .length = len,
-        .value = optsbuf[4..],
+        .length = padded_len + tag_value_len_bytes,
+        .value = optsbuf[tag_value_len_bytes .. tag_value_len_bytes + len],
     };
 }

@@ -58,7 +58,7 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     const optionslen = blocklen - fixed_meta_len - 4;
     const optionsbuf = try alloc.alloc(u8, optionslen);
     const ouread = try reader.read(optionsbuf);
-    if (ouread < optionslen) {
+    if (ouread != optionslen) {
         std.log.err(
             "uh... didn't read enough: {d} should be {d}",
             .{ ouread, optionslen },
@@ -69,7 +69,10 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     var i: u64 = 0;
     while (i < optionsbuf.len) {
         const option = try block_option.loadoption(optionsbuf[i..], Options);
-        std.debug.assert(option.length > 0);
+        if (option.length == 0) {
+            std.log.debug("Found end of options.", .{});
+            break;
+        }
         i += option.length;
         try options.append(option);
         option.print();
