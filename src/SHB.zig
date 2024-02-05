@@ -14,8 +14,11 @@ const Options = enum(u16) {
     _,
 
     pub fn examine(self: Options) void {
-        if (self == Options._) {
-            std.log.info("");
+        switch (self) {
+            .shb_hardware => std.log.info("hardware", .{}),
+            .shb_os => std.log.info("os", .{}),
+            .shb_userappl => std.log.info("userappl", .{}),
+            ._ => std.log.info("unknown", .{}),
         }
     }
 };
@@ -26,10 +29,6 @@ magic: BlockMeta.Endianness,
 version: BlockMeta.PcapngVersion,
 section_length: i64,
 options: []BlockOption(Options),
-
-pub const SHBError = error{
-    WrongBlockType,
-};
 
 pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     const fixed_meta_len = 4 * 6;

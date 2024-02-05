@@ -8,10 +8,12 @@ pub const MetaError = error{
     BadMagic,
     UnsupportedVersion,
     PrematureEOF,
+    WrongBlockType,
 };
 
 pub const BlockType = enum {
     SHB,
+    IDB,
 };
 
 pub const Endianness = enum {
@@ -20,13 +22,15 @@ pub const Endianness = enum {
 };
 
 pub fn getblocktype(b: *[4]u8) MetaError!BlockType {
-    const tag = [4]u8{ 0x0a, 0x0d, 0x0d, 0x0a };
-    if (std.mem.eql(u8, b, &tag)) {
-        return BlockMeta.BlockType.SHB;
-    } else {
-        std.log.err("uh... why? {any}", .{b});
-        return MetaError.BadTag;
-    }
+    const tag: u32 = @bitCast(b.*);
+    return switch (tag) {
+        0x0a0d0d0a => BlockType.SHB,
+        1 => BlockType.IDB,
+        else => {
+            std.log.err("uh... why? {any}", .{b});
+            return MetaError.BadTag;
+        },
+    };
 }
 
 pub fn getendianness(b: *[4]u8) BlockMeta.MetaError!BlockMeta.Endianness {
