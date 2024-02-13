@@ -21,13 +21,13 @@ pub const Endianness = enum {
     Little,
 };
 
-pub fn getblocktype(b: *[4]u8) MetaError!BlockType {
+pub fn getblocktype(b: *const [4]u8) MetaError!BlockType {
     const tag: u32 = @bitCast(b.*);
     return switch (tag) {
         0x0a0d0d0a => BlockType.SHB,
         1 => BlockType.IDB,
         else => {
-            std.log.err("uh... why? {any}", .{b});
+            std.log.err("uh... why? {d}", .{tag});
             return MetaError.BadTag;
         },
     };

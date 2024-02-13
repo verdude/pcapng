@@ -19,6 +19,8 @@ pub fn main() !u8 {
     const len: u16 = 1024;
     var buf = [1]u8{0} ** len;
     var fba = FixedBufferAllocator.init(&buf);
+    //var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    //const gpalloc = gpa.allocator();
     const alloc = fba.allocator();
 
     const filename = getfirstarg(alloc) orelse {
@@ -29,6 +31,16 @@ pub fn main() !u8 {
     defer file.close();
     //const filestat = file.stat();
     const reader = file.reader();
+    fba.reset();
     _ = try SHB.parse(reader, alloc);
+    const tmp = try alloc.alloc(u8, 8);
+    while (true) {
+        const nread = try reader.read(tmp);
+        if (nread != 8) {
+            return error{OhNoTooShort}.OhNoTooShort;
+        }
+        var next_block = try BlockMeta.getblocktype(tmp[0..4]);
+        std.log.debug("Next: {any}", .{next_block});
+    }
     return 0;
 }
