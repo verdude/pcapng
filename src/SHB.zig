@@ -53,7 +53,7 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !SHB {
     std.log.debug("SHB Block Len: {d}", .{blocklen});
     const optionslen = blocklen - fixed_meta_len;
     const optionsbuf = try file.read(optionslen);
-    var options: std.ArrayList(BlockOption(Options)) = std.ArrayList(BlockOption(Options)).init(alloc);
+    var options = std.ArrayList(BlockOption(Options)).init(alloc);
     var i: u64 = 0;
     while (i < optionsbuf.len - 4) {
         const option = try block_option.loadoption(optionsbuf[i..], Options);
