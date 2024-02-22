@@ -29,18 +29,34 @@ pub fn main() !u8 {
         return 1;
     };
 
-    var file = try PcapNGFile.load_file(filename);
-    defer std.heap.page_allocator.free(file.buf);
+    var gpai = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = gpai.allocator();
+    defer {
+        const deinit_status = gpai.deinit();
+        if (deinit_status == .leak) {
+            std.log.err("mem leak", .{});
+        }
+    }
 
-    _ = try SHB.parse(&file, alloc);
-    //const tmp = try alloc.alloc(u8, 8);
-    //while (true) {
-    //const nread = try reader.read(tmp);
-    //if (nread != 8) {
-    //return error{OhNoTooShort}.OhNoTooShort;
-    //}
-    //var next_block = try BlockMeta.getblocktype(tmp[0..4]);
-    //std.log.debug("Next: {any}", .{next_block});
-    //}
+    const file = try std.fs.cwd().openFile(filename, .{});
+    defer file.close();
+    const filestat = try file.stat();
+    const filebuf: []u8 = try gpa.alloc(u8, filestat.size);
+    const uread = try file.readAll(filebuf);
+    if (uread < filestat.size) {
+        std.log.warn("Only read {d} bytes.", .{uread});
+    } else {
+        std.log.debug("Read {d} bytes.", .{uread});
+    }
+    var ngfile: PcapNGFile = .{ .buf = &filebuf, .pos = 0 };
+
+    defer gpa.free(ngfile.buf.*);
+
+    _ = try SHB.parse(&ngfile, alloc);
+    while (true) {
+        var tmp: []const u8 = try ngfile.read(8);
+        var next_block = try BlockMeta.getblocktype(tmp[0..4]);
+        std.log.debug("Next: {any}", .{next_block});
+    }
     return 0;
 }
