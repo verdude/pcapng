@@ -4,6 +4,7 @@ const ArgIterator = std.process.ArgIterator;
 const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const BlockMeta = @import("BlockMeta.zig");
 const SHB = @import("SHB.zig");
+const PcapNGFile = @import("pcapng_file.zig");
 
 pub const log_level: std.log.Level = .info;
 
@@ -27,20 +28,19 @@ pub fn main() !u8 {
         std.log.err("Missing arg.", .{});
         return 1;
     };
-    const file = try std.fs.cwd().openFile(filename, .{});
-    defer file.close();
-    //const filestat = file.stat();
-    const reader = file.reader();
-    fba.reset();
-    _ = try SHB.parse(reader, alloc);
-    const tmp = try alloc.alloc(u8, 8);
-    while (true) {
-        const nread = try reader.read(tmp);
-        if (nread != 8) {
-            return error{OhNoTooShort}.OhNoTooShort;
-        }
-        var next_block = try BlockMeta.getblocktype(tmp[0..4]);
-        std.log.debug("Next: {any}", .{next_block});
-    }
+
+    var file = try PcapNGFile.load_file(filename);
+    defer std.heap.page_allocator.free(file.buf);
+
+    _ = try SHB.parse(&file, alloc);
+    //const tmp = try alloc.alloc(u8, 8);
+    //while (true) {
+    //const nread = try reader.read(tmp);
+    //if (nread != 8) {
+    //return error{OhNoTooShort}.OhNoTooShort;
+    //}
+    //var next_block = try BlockMeta.getblocktype(tmp[0..4]);
+    //std.log.debug("Next: {any}", .{next_block});
+    //}
     return 0;
 }

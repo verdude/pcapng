@@ -4,6 +4,7 @@ const std = @import("std");
 const mem = std.mem;
 const BlockMeta = @import("BlockMeta.zig");
 const block_option = @import("BlockOption.zig");
+const PcapNGFile = @import("pcapng_file.zig");
 const BlockOption = block_option.BlockOption;
 const BlockOptionType = block_option.BlockOptionType;
 
@@ -30,13 +31,9 @@ version: BlockMeta.PcapngVersion,
 section_length: i64,
 options: []BlockOption(Options),
 
-pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
+pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !SHB {
     const fixed_meta_len = 4 * 6;
-    const fixed_meta = try alloc.alloc(u8, fixed_meta_len);
-    const uread = try reader.read(fixed_meta);
-    if (uread != fixed_meta_len) {
-        std.log.err("uh, not enough bits?", .{});
-    }
+    var fixed_meta: []const u8 = try file.read(fixed_meta_len);
     const btype = try BlockMeta.getblocktype(fixed_meta[0..4]);
     if (btype != BlockMeta.BlockType.SHB) {
         return BlockMeta.MetaError.WrongBlockType;
@@ -54,19 +51,11 @@ pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !SHB {
     }
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
     std.log.debug("SHB Block Len: {d}", .{blocklen});
-    const optionslen = blocklen - fixed_meta_len - 4;
-    const optionsbuf = try alloc.alloc(u8, optionslen);
-    const ouread = try reader.read(optionsbuf);
-    if (ouread != optionslen) {
-        std.log.err(
-            "uh... didn't read enough: {d} should be {d}",
-            .{ ouread, optionslen },
-        );
-        return BlockMeta.MetaError.PrematureEOF;
-    }
-    var options = std.ArrayList(BlockOption(Options)).init(alloc);
+    const optionslen = blocklen - fixed_meta_len;
+    const optionsbuf = try file.read(optionslen);
+    var options: std.ArrayList(BlockOption(Options)) = std.ArrayList(BlockOption(Options)).init(alloc);
     var i: u64 = 0;
-    while (i < optionsbuf.len) {
+    while (i < optionsbuf.len - 4) {
         const option = try block_option.loadoption(optionsbuf[i..], Options);
         if (option.length == 0) {
             std.log.debug("Found end of options.", .{});

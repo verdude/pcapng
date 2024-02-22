@@ -33,7 +33,7 @@ pub fn getblocktype(b: *const [4]u8) MetaError!BlockType {
     };
 }
 
-pub fn getendianness(b: *[4]u8) BlockMeta.MetaError!BlockMeta.Endianness {
+pub fn getendianness(b: *const [4]u8) BlockMeta.MetaError!BlockMeta.Endianness {
     const big = [4]u8{ 0x1a, 0x2b, 0x3c, 0x4d };
     const little = [4]u8{ 0x4d, 0x3c, 0x2b, 0x1a };
     if (std.mem.eql(u8, b, &little)) {
