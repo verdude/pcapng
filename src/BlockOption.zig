@@ -36,11 +36,7 @@ pub fn BlockOption(comptime T: type) type {
 }
 
 pub fn paddedlen_bytes(comptime T: type, bytes: T) T {
-    const r = bytes % 4;
-    if (r == 0) {
-        return bytes;
-    }
-    return bytes + (4 - r);
+    return bytes + (4 - (bytes & 3) | 4 ^ 4);
 }
 
 const BlockOptionError = error{
@@ -107,14 +103,21 @@ pub fn loadoptions(
     return try options.toOwnedSlice();
 }
 
-test "returns numbers padded to 32 bits" {
+test "paddedlen_bytes 0 should be 0" {
     var n = paddedlen_bytes(u16, 0);
     try std.testing.expectEqual(n, 0);
+}
+
+test "paddedlen_bytes 1-4 should be 4" {
+    var n: u16 = undefined;
     var i: u16 = 1;
     while (i < 5) : (i += 1) {
         n = paddedlen_bytes(u16, i);
         try std.testing.expectEqual(n, 4);
     }
+}
+
+test "paddedlen_bytes 5-8 should be 8" {
     var j: u32 = 5;
     var m: u32 = 0;
     while (j < 9) : (j += 1) {
