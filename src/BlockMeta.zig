@@ -4,6 +4,7 @@ const std = @import("std");
 const mem = std.mem;
 const SHB = @import("SHB.zig");
 const IDB = @import("IDB.zig");
+const EPB = @import("EPB.zig");
 
 pub const MetaError = error{
     BadTag,
@@ -12,16 +13,19 @@ pub const MetaError = error{
     UnsupportedVersion,
     PrematureEOF,
     WrongBlockType,
+    InvalidFinalTotalLen,
 };
 
 pub const BlockType = enum {
     shb,
     idb,
+    epb,
 };
 
 pub const Block = union(BlockType) {
     shb: SHB,
     idb: IDB,
+    epb: EPB,
 };
 
 pub const Endianness = enum {
@@ -34,6 +38,7 @@ pub fn getblocktype(b: *const [4]u8) MetaError!BlockType {
     return switch (tag) {
         0x0a0d0d0a => BlockType.shb,
         1 => BlockType.idb,
+        6 => BlockType.epb,
         else => {
             std.log.err("uh... why? {d}", .{tag});
             return MetaError.BadTag;
@@ -50,6 +55,16 @@ pub fn getendianness(b: *const [4]u8) BlockMeta.MetaError!BlockMeta.Endianness {
         return BlockMeta.Endianness.Big;
     } else {
         return BlockMeta.MetaError.BadMagic;
+    }
+}
+
+pub fn assert_final_total_len(final_bytes: []const u8, initial_total_len: u32) !void {
+    if (final_bytes.len != 4) {
+        return MetaError.BadArg;
+    }
+    const final_total_len: u32 = @bitCast(final_bytes[0..4].*);
+    if (final_total_len != initial_total_len) {
+        return MetaError.InvalidFinalTotalLen;
     }
 }
 

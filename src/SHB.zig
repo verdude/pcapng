@@ -34,6 +34,7 @@ offset: u64,
 pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
     const offset = file.pos;
     const fixed_meta_len = 4 * 6;
+    const final_total_len = 4;
     var fixed_meta: []const u8 = try file.read(fixed_meta_len);
     const btype = try BlockMeta.getblocktype(fixed_meta[0..4]);
     if (btype != BlockMeta.BlockType.shb) {
@@ -50,10 +51,12 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
         );
         return BlockMeta.MetaError.UnsupportedVersion;
     }
+
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
     std.log.debug("SHB Block Len: {d}", .{blocklen});
-    const optionslen = blocklen - fixed_meta_len;
+    const optionslen = blocklen - fixed_meta_len - final_total_len;
     const options = try block_option.loadoptions(file, optionslen, Options, alloc);
+    try BlockMeta.assert_final_total_len(try file.read(final_total_len), blocklen);
 
     return BlockMeta.Block{ .shb = .{
         .total_len = blocklen,

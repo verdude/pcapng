@@ -52,13 +52,16 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
     const ltype_bits: u16 = @bitCast(fixed_meta[8..10].*);
     const link_type: LinkType = try std.meta.intToEnum(LinkType, ltype_bits);
     const snaplen: u32 = @bitCast(fixed_meta[12..16].*);
-    const optionslen = total_len - fixed_meta_len;
+    const final_total_len = 4;
+    const optionslen = total_len - fixed_meta_len - final_total_len;
+    const options = try block_option.loadoptions(file, optionslen, Options, alloc);
+    try BlockMeta.assert_final_total_len(try file.read(final_total_len), total_len);
 
     return BlockMeta.Block{ .idb = .{
         .total_len = total_len,
         .link_type = link_type,
         .snap_len = snaplen,
-        .options = try block_option.loadoptions(file, optionslen, Options, alloc),
+        .options = options,
         .offset = offset,
     } };
 }

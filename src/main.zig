@@ -5,6 +5,7 @@ const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const BlockMeta = @import("BlockMeta.zig");
 const SHB = @import("SHB.zig");
 const IDB = @import("IDB.zig");
+const EPB = @import("EPB.zig");
 const PcapNGFile = @import("pcapng_file.zig");
 
 pub const log_level: std.log.Level = .info;
@@ -48,6 +49,7 @@ pub fn main() !u8 {
         const block = switch (try BlockMeta.getblocktype(tmp[0..4])) {
             BlockMeta.BlockType.shb => try SHB.parse(&file, alloc),
             BlockMeta.BlockType.idb => try IDB.parse(&file, alloc),
+            BlockMeta.BlockType.epb => try EPB.parse(&file, alloc),
         };
         std.log.debug("Block: {any}", .{block});
     }

@@ -25,6 +25,7 @@ pub fn BlockOption(comptime T: type) type {
         value: []const u8,
 
         pub fn print(self: BlockOption(T)) void {
+            std.log.debug("option type {any}", .{self.type});
             const botypeval: []const u8 = switch (self.type) {
                 .common => @tagName(self.type.common),
                 .block_specific => @tagName(self.type.block_specific),
@@ -34,8 +35,12 @@ pub fn BlockOption(comptime T: type) type {
     };
 }
 
-pub fn paddedlen_bytes(bytes: u16) u16 {
-    return bytes + (bytes % 4);
+pub fn paddedlen_bytes(comptime T: type, bytes: T) T {
+    const r = bytes % 4;
+    if (r == 0) {
+        return bytes;
+    }
+    return bytes + (4 - r);
 }
 
 const BlockOptionError = error{
@@ -64,7 +69,7 @@ pub fn loadoption(optsbuf: []const u8, comptime T: type) !BlockOption(T) {
     }
 
     const len: u16 = @bitCast(optsbuf[2..4].*);
-    const padded_len = paddedlen_bytes(len);
+    const padded_len = paddedlen_bytes(u16, len);
     if (padded_len > optsbuf.len - tag_value_len_bytes) {
         std.log.debug(
             "Expected len: {d}, found: {d}",
@@ -80,11 +85,16 @@ pub fn loadoption(optsbuf: []const u8, comptime T: type) !BlockOption(T) {
     };
 }
 
-pub fn loadoptions(file: *PcapNGFile, optionslen: u64, comptime T: type, alloc: std.mem.Allocator) ![]const BlockOption(T) {
+pub fn loadoptions(
+    file: *PcapNGFile,
+    optionslen: u64,
+    comptime T: type,
+    alloc: std.mem.Allocator,
+) ![]const BlockOption(T) {
     const optionsbuf = try file.read(optionslen);
     var options = std.ArrayList(BlockOption(T)).init(alloc);
     var i: u64 = 0;
-    while (i < optionsbuf.len - 4) {
+    while (i < optionsbuf.len) {
         const option = try loadoption(optionsbuf[i..], T);
         if (option.length == 0) {
             std.log.debug("Found end of options.", .{});
@@ -95,4 +105,20 @@ pub fn loadoptions(file: *PcapNGFile, optionslen: u64, comptime T: type, alloc: 
         option.print();
     }
     return try options.toOwnedSlice();
+}
+
+test "returns numbers padded to 32 bits" {
+    var n = paddedlen_bytes(u16, 0);
+    try std.testing.expectEqual(n, 0);
+    var i: u16 = 1;
+    while (i < 5) : (i += 1) {
+        n = paddedlen_bytes(u16, i);
+        try std.testing.expectEqual(n, 4);
+    }
+    var j: u32 = 5;
+    var m: u32 = 0;
+    while (j < 9) : (j += 1) {
+        m = paddedlen_bytes(u32, j);
+        try std.testing.expectEqual(m, 8);
+    }
 }
