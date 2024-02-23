@@ -38,24 +38,15 @@ pub fn main() !u8 {
         }
     }
 
-    const file = try std.fs.cwd().openFile(filename, .{});
-    defer file.close();
-    const filestat = try file.stat();
-    const filebuf: []u8 = try gpa.alloc(u8, filestat.size);
-    const uread = try file.readAll(filebuf);
-    if (uread < filestat.size) {
-        std.log.warn("Only read {d} bytes.", .{uread});
-    } else {
-        std.log.debug("Read {d} bytes.", .{uread});
-    }
-    var ngfile: PcapNGFile = .{ .buf = &filebuf, .pos = 0 };
-
-    defer gpa.free(ngfile.buf.*);
-
-    _ = try SHB.parse(&ngfile, alloc);
+    var file = try PcapNGFile.load_file(filename, gpa);
+    defer gpa.free(file.buf);
+    _ = try SHB.parse(&file, alloc);
     while (true) {
-        var tmp: []const u8 = try ngfile.read(8);
-        var next_block = try BlockMeta.getblocktype(tmp[0..4]);
+        var tmp: []const u8 = try file.read(8);
+        const next_block = BlockMeta.getblocktype(tmp[0..4]) catch |err| {
+            std.log.debug("uh oh, {any}", .{err});
+            break;
+        };
         std.log.debug("Next: {any}", .{next_block});
     }
     return 0;

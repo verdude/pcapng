@@ -22,11 +22,8 @@ pub const Endianness = enum {
     Little,
 };
 
-pub fn getblocktype(b: []const u8) MetaError!BlockType {
-    if (b.len != 4) {
-        return MetaError.BadArg;
-    }
-    const tag: u32 = @bitCast(b[0..4].*);
+pub fn getblocktype(b: *const [4]u8) MetaError!BlockType {
+    const tag: u32 = @bitCast(b.*);
     return switch (tag) {
         0x0a0d0d0a => BlockType.SHB,
         1 => BlockType.IDB,
