@@ -35,8 +35,8 @@ pub fn BlockOption(comptime T: type) type {
     };
 }
 
-pub fn paddedlen_bytes(comptime T: type, bytes: T) T {
-    return bytes + (4 - (bytes & 3) | 4 ^ 4);
+pub fn paddedlen_bytes(comptime T: type, n: T) T {
+    return n + (4 - (n & 3) | 4 ^ 4);
 }
 
 const BlockOptionError = error{
