@@ -7,6 +7,7 @@ const SHB = @import("SHB.zig");
 const IDB = @import("IDB.zig");
 const EPB = @import("EPB.zig");
 const PcapNGFile = @import("pcapng_file.zig");
+const ReadError = PcapNGFile.ReadError;
 
 pub const log_level: std.log.Level = .info;
 
@@ -44,14 +45,15 @@ pub fn main() !u8 {
     _ = try SHB.parse(&file, alloc);
 
     while (true) {
-        var tmp: []const u8 = try file.read(4);
+        var tmp = try file.read_maybe(4) orelse break;
+        // ehh
         file.pos -= 4;
         const block = switch (try BlockMeta.getblocktype(tmp[0..4])) {
             BlockMeta.BlockType.shb => try SHB.parse(&file, alloc),
             BlockMeta.BlockType.idb => try IDB.parse(&file, alloc),
             BlockMeta.BlockType.epb => try EPB.parse(&file, alloc),
         };
-        std.log.debug("Block: {any}", .{block});
+        std.log.debug("Block: {s}", .{@tagName(block)});
     }
     return 0;
 }
