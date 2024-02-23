@@ -11,7 +11,7 @@ pub fn load_file(filename: []const u8, alloc: std.mem.Allocator) !PcapNGFile {
     const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
     const filestat = try file.stat();
-    const buf: []u8 = try alloc.alloc(u8, 1);
+    const buf: []u8 = try alloc.alloc(u8, filestat.size);
     const uread = try file.readAll(buf);
     if (uread < filestat.size) {
         std.log.warn("Only read {d} bytes.", .{uread});

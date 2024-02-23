@@ -1,5 +1,6 @@
 const std = @import("std");
 const BlockMeta = @import("BlockMeta.zig");
+const PcapNGFile = @import("pcapng_file.zig");
 
 const Type = enum(u16) {
     opt_endofopt = 0,
@@ -77,4 +78,21 @@ pub fn loadoption(optsbuf: []const u8, comptime T: type) !BlockOption(T) {
         .length = padded_len + tag_value_len_bytes,
         .value = optsbuf[tag_value_len_bytes .. tag_value_len_bytes + len],
     };
+}
+
+pub fn loadoptions(file: *PcapNGFile, optionslen: u64, comptime T: type, alloc: std.mem.Allocator) ![]const BlockOption(T) {
+    const optionsbuf = try file.read(optionslen);
+    var options = std.ArrayList(BlockOption(T)).init(alloc);
+    var i: u64 = 0;
+    while (i < optionsbuf.len - 4) {
+        const option = try loadoption(optionsbuf[i..], T);
+        if (option.length == 0) {
+            std.log.debug("Found end of options.", .{});
+            break;
+        }
+        i += option.length;
+        try options.append(option);
+        option.print();
+    }
+    return try options.toOwnedSlice();
 }

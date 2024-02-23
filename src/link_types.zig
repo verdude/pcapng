@@ -1,4 +1,4 @@
-const LinkType = enum(u16) {
+pub const LinkType = enum(u16) {
     NULL = 0, // BSD loopback encapsulation
     ETHERNET = 1, // IEEE 802.3 Ethernet
     EXP_ETHERNET = 2, // Xerox experimental 3Mb Ethernet
@@ -98,7 +98,7 @@ const LinkType = enum(u16) {
     JUNIPER_FRELAY = 180, // Reserved for Juniper Networks
     JUNIPER_CHDLC = 181, // Reserved for Juniper Networks
     MFR = 182, // FRF.16.1 Multi-Link Frame Relay frames, beginning with an FRF.12 Interface fragmentation format fragmentation header.
-    JUNIPER_VP = 182, // Reserved for Juniper Networks
+    // JUNIPER_VP = 182, // Reserved for Juniper Networks. Duplicate code for some reason?
     A653_ICM = 185, // Reserved for Arinc 653 Interpartition Communication messages
     USB_FREEBSD = 186, // USB packets, beginning with a FreeBSD USB header
     BLUETOOTH_HCI_H4 = 187, // Bluetooth HCI UART transport layer; the frame contains an HCI packet indicator byte, as specified by the UART Transport Layer portion of the most recent Bluetooth Core specification , followed by an HCI packet of the specified packet type, as specified by the Host Controller Interface Functional Specification portion of the most recent Bluetooth Core Specification.

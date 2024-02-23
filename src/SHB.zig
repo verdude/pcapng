@@ -24,18 +24,19 @@ const Options = enum(u16) {
     }
 };
 
-block_type: BlockMeta.BlockType = BlockMeta.BlockType.SHB,
 total_len: u32,
 magic: BlockMeta.Endianness,
 version: BlockMeta.PcapngVersion,
 section_length: i64,
-options: []BlockOption(Options),
+options: []const BlockOption(Options),
+offset: u64,
 
-pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !SHB {
+pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
+    const offset = file.pos;
     const fixed_meta_len = 4 * 6;
     var fixed_meta: []const u8 = try file.read(fixed_meta_len);
     const btype = try BlockMeta.getblocktype(fixed_meta[0..4]);
-    if (btype != BlockMeta.BlockType.SHB) {
+    if (btype != BlockMeta.BlockType.shb) {
         return BlockMeta.MetaError.WrongBlockType;
     }
     const version = BlockMeta.PcapngVersion{
@@ -52,25 +53,14 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !SHB {
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
     std.log.debug("SHB Block Len: {d}", .{blocklen});
     const optionslen = blocklen - fixed_meta_len;
-    const optionsbuf = try file.read(optionslen);
-    var options = std.ArrayList(BlockOption(Options)).init(alloc);
-    var i: u64 = 0;
-    while (i < optionsbuf.len - 4) {
-        const option = try block_option.loadoption(optionsbuf[i..], Options);
-        if (option.length == 0) {
-            std.log.debug("Found end of options.", .{});
-            break;
-        }
-        i += option.length;
-        try options.append(option);
-        option.print();
-    }
-    return .{
-        .block_type = btype,
+    const options = try block_option.loadoptions(file, optionslen, Options, alloc);
+
+    return BlockMeta.Block{ .shb = .{
         .total_len = blocklen,
         .magic = try BlockMeta.getendianness(fixed_meta[8..12]),
         .version = version,
         .section_length = @bitCast(fixed_meta[16..24].*),
-        .options = try options.toOwnedSlice(),
-    };
+        .options = options,
+        .offset = offset,
+    } };
 }

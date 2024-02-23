@@ -4,6 +4,15 @@ const std = @import("std");
 const mem = std.mem;
 const BlockMeta = @import("BlockMeta.zig");
 const LinkType = @import("link_types.zig").LinkType;
+const block_option = @import("BlockOption.zig");
+const PcapNGFile = @import("pcapng_file.zig");
+const BlockOption = block_option.BlockOption;
+
+total_len: u32,
+link_type: LinkType,
+snap_len: u32,
+options: []const BlockOption(Options),
+offset: u64,
 
 const Options = enum(u16) {
     // name, code, length, multiple allowed
@@ -26,25 +35,30 @@ const Options = enum(u16) {
     _,
 };
 
-pub fn parse(reader: std.fs.File.Reader, alloc: mem.Allocator) !IDB {
+pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
     // type 4 bytes
     // total len 4 bytes
     // link type 2 bytes
     // reserved 2 bytes - 0s MUST ignore...
     // snaplen 4 bytes
     const fixed_meta_len = 16;
-    const fixed_meta = try alloc.alloc(u8, fixed_meta_len);
-    const uread = try reader.read(fixed_meta_len);
-    if (uread != fixed_meta_len) {
-        return error{NotEnoughBits};
-    }
+    const offset = file.pos;
+    const fixed_meta = try file.read(fixed_meta_len);
     const btype = try BlockMeta.getblocktype(fixed_meta[0..4]);
-    if (btype != BlockMeta.BlockType.IDB) {
+    if (btype != BlockMeta.BlockType.idb) {
         return BlockMeta.MetaError.WrongBlockType;
     }
-    const block_type: u32 = @bitCast(fixed_meta[0..4]);
-    const total_len: u32 = @bitCast(fixed_meta[4..8]);
-    const ltype_bits: u16 = @bitCast(fixed_meta[8..10]);
+    const total_len: u32 = @bitCast(fixed_meta[4..8].*);
+    const ltype_bits: u16 = @bitCast(fixed_meta[8..10].*);
     const link_type: LinkType = try std.meta.intToEnum(LinkType, ltype_bits);
-    const snaplen: u32 = @bitCast(fixed_meta[12..]);
+    const snaplen: u32 = @bitCast(fixed_meta[12..16].*);
+    const optionslen = total_len - fixed_meta_len;
+
+    return BlockMeta.Block{ .idb = .{
+        .total_len = total_len,
+        .link_type = link_type,
+        .snap_len = snaplen,
+        .options = try block_option.loadoptions(file, optionslen, Options, alloc),
+        .offset = offset,
+    } };
 }
