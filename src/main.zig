@@ -5,6 +5,7 @@ const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const BlockMeta = @import("BlockMeta.zig");
 const SHB = @import("SHB.zig");
 const IDB = @import("IDB.zig");
+const ISB = @import("ISB.zig");
 const EPB = @import("EPB.zig");
 const PcapNGFile = @import("pcapng_file.zig");
 const ReadError = PcapNGFile.ReadError;
@@ -52,8 +53,9 @@ pub fn main() !u8 {
             BlockMeta.BlockType.shb => try SHB.parse(&file, alloc),
             BlockMeta.BlockType.idb => try IDB.parse(&file, alloc),
             BlockMeta.BlockType.epb => try EPB.parse(&file, alloc),
+            BlockMeta.BlockType.isb => try ISB.parse(&file, alloc),
         };
-        std.log.debug("Block: {s}", .{@tagName(block)});
+        _ = block;
     }
     return 0;
 }

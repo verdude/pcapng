@@ -3,6 +3,7 @@ const BlockOption = @import("BlockOption.zig");
 const std = @import("std");
 const mem = std.mem;
 const SHB = @import("SHB.zig");
+const ISB = @import("ISB.zig");
 const IDB = @import("IDB.zig");
 const EPB = @import("EPB.zig");
 
@@ -20,12 +21,14 @@ pub const BlockType = enum {
     shb,
     idb,
     epb,
+    isb,
 };
 
 pub const Block = union(BlockType) {
     shb: SHB,
     idb: IDB,
     epb: EPB,
+    isb: ISB,
 };
 
 pub const Endianness = enum {
@@ -37,8 +40,9 @@ pub fn getblocktype(b: *const [4]u8) MetaError!BlockType {
     const tag: u32 = @bitCast(b.*);
     return switch (tag) {
         0x0a0d0d0a => BlockType.shb,
-        1 => BlockType.idb,
         6 => BlockType.epb,
+        1 => BlockType.idb,
+        5 => BlockType.isb,
         else => {
             std.log.err("uh... why? {d}", .{tag});
             return MetaError.BadTag;
