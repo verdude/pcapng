@@ -1,6 +1,4 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
-const ArgIterator = std.process.ArgIterator;
 const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const BlockMeta = @import("BlockMeta.zig");
 const SHB = @import("SHB.zig");
@@ -9,16 +7,9 @@ const ISB = @import("ISB.zig");
 const EPB = @import("EPB.zig");
 const PcapNGFile = @import("pcapng_file.zig");
 const ReadError = PcapNGFile.ReadError;
+const args = @import("args.zig");
 
 pub const log_level: std.log.Level = .info;
-
-fn getfirstarg(alloc: Allocator) ?[]const u8 {
-    var args = try ArgIterator.initWithAllocator(alloc);
-    defer args.deinit();
-
-    _ = args.next();
-    return args.next();
-}
 
 pub fn main() !u8 {
     const len: u16 = 1024;
@@ -26,7 +17,7 @@ pub fn main() !u8 {
     var fba = FixedBufferAllocator.init(&buf);
     const alloc = fba.allocator();
 
-    const filename = getfirstarg(alloc) orelse {
+    const filename = args.getfirstarg(alloc) orelse {
         std.log.err("Missing arg.", .{});
         return 1;
     };
