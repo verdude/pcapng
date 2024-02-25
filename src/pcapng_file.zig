@@ -1,13 +1,13 @@
-const PcapNGFile = @This();
+const SimpleFile = @This();
 
 const std = @import("std");
 
 buf: []const u8,
 pos: u64,
 
-pub const ReadError = error{ NotEnoughBytes, InvalidPosition };
+pub const ReadError = error{ InvalidPosition, EOF };
 
-pub fn load_file(filename: []const u8, alloc: std.mem.Allocator) !PcapNGFile {
+pub fn load(filename: []const u8, alloc: std.mem.Allocator) !SimpleFile {
     const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
     const filestat = try file.stat();
@@ -21,24 +21,23 @@ pub fn load_file(filename: []const u8, alloc: std.mem.Allocator) !PcapNGFile {
     return .{ .buf = buf, .pos = 0 };
 }
 
-pub fn read_maybe(self: *PcapNGFile, len: u64, update: bool) ReadError!?[]const u8 {
+pub fn read_maybe(self: *SimpleFile, len: u64, update: bool) ReadError!?[]const u8 {
     const end_offset = len + self.pos;
     if (self.pos > self.buf.len) {
         return ReadError.InvalidPosition;
     } else if (self.pos == self.buf.len) {
         return null;
     }
-    const slice = self.buf[self.pos..end_offset];
     if (update) {
-        self.pos = end_offset;
+        defer self.pos = end_offset;
     }
-    return slice;
+    return self.buf[self.pos..end_offset];
 }
 
-pub fn read(self: *PcapNGFile, len: u64) ReadError![]const u8 {
-    return (try self.read_maybe(len, true)).?;
+pub fn read(self: *SimpleFile, len: u64) ReadError![]const u8 {
+    return try self.read_maybe(len, true) orelse ReadError.EOF;
 }
 
-pub fn peek(self: PcapNGFile, len: u64) ReadError![]const u8 {
-    return (try self.read_maybe(len, false)).?;
+pub fn peek(self: *SimpleFile, len: u64) ReadError![]const u8 {
+    return try self.read_maybe(len, false) orelse ReadError.EOF;
 }

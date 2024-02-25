@@ -5,8 +5,8 @@ const SHB = @import("SHB.zig");
 const IDB = @import("IDB.zig");
 const ISB = @import("ISB.zig");
 const EPB = @import("EPB.zig");
-const PcapNGFile = @import("pcapng_file.zig");
-const ReadError = PcapNGFile.ReadError;
+const SimpleFile = @import("pcapng_file.zig");
+const ReadError = SimpleFile.ReadError;
 const args = @import("args.zig");
 
 pub const log_level: std.log.Level = .info;
@@ -31,19 +31,20 @@ pub fn main() !u8 {
         }
     }
 
-    var file = try PcapNGFile.load_file(filename, gpa);
+    var file = try SimpleFile.load(filename, gpa);
+    const fp = &file;
     defer gpa.free(file.buf);
 
-    _ = try SHB.parse(&file);
+    _ = try SHB.parse(fp);
 
     while (true) {
-        var tmp = try file.read_maybe(4, false) orelse break;
+        var tmp = try fp.read_maybe(4, false) orelse break;
         const block = switch (try BlockMeta.getblocktype(tmp[0..4])) {
-            BlockMeta.BlockType.shb => try SHB.parse(&file),
-            BlockMeta.BlockType.idb => try IDB.parse(&file),
-            BlockMeta.BlockType.epb => try EPB.parse(&file),
+            BlockMeta.BlockType.shb => try SHB.parse(fp),
+            BlockMeta.BlockType.idb => try IDB.parse(fp),
+            BlockMeta.BlockType.epb => try EPB.parse(fp),
             BlockMeta.BlockType.isb => isb: {
-                const isb = try ISB.parse(&file);
+                const isb = try ISB.parse(fp);
                 std.log.debug("ISB, {any}", .{isb});
                 break :isb isb;
             },
