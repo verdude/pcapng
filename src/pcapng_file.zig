@@ -21,7 +21,7 @@ pub fn load_file(filename: []const u8, alloc: std.mem.Allocator) !PcapNGFile {
     return .{ .buf = buf, .pos = 0 };
 }
 
-pub fn read_maybe(self: *PcapNGFile, len: u64) ReadError!?[]const u8 {
+pub fn read_maybe(self: *PcapNGFile, len: u64, update: bool) ReadError!?[]const u8 {
     const end_offset = len + self.pos;
     if (self.pos > self.buf.len) {
         return ReadError.InvalidPosition;
@@ -29,10 +29,16 @@ pub fn read_maybe(self: *PcapNGFile, len: u64) ReadError!?[]const u8 {
         return null;
     }
     const slice = self.buf[self.pos..end_offset];
-    self.pos = end_offset;
+    if (update) {
+        self.pos = end_offset;
+    }
     return slice;
 }
 
 pub fn read(self: *PcapNGFile, len: u64) ReadError![]const u8 {
-    return (try self.read_maybe(len)).?;
+    return (try self.read_maybe(len, true)).?;
+}
+
+pub fn peek(self: PcapNGFile, len: u64) ReadError![]const u8 {
+    return (try self.read_maybe(len, false)).?;
 }
