@@ -5,7 +5,7 @@ const Args = struct {};
 
 const Flags = enum {};
 
-fn getfirstarg(alloc: std.mem.Allocator) ?[]const u8 {
+pub fn getfirstarg(alloc: std.mem.Allocator) ?[]const u8 {
     var args = try std.process.ArgIterator.initWithAllocator(alloc);
     defer args.deinit();
 

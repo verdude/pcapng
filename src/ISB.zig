@@ -6,13 +6,13 @@ const BlockMeta = @import("BlockMeta.zig");
 const LinkType = @import("link_types.zig").LinkType;
 const block_option = @import("BlockOption.zig");
 const PcapNGFile = @import("pcapng_file.zig");
-const BlockOption = block_option.BlockOption;
+const BlockOptions = block_option.BlockOptions;
 
 total_len: u32,
 interface_id: u32,
 timestamp_high: u32,
 timestamp_low: u32,
-options: []const BlockOption(Options),
+options: BlockOptions,
 offset: u64,
 
 const Options = enum(u16) {
@@ -27,7 +27,7 @@ const Options = enum(u16) {
     _,
 };
 
-pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
+pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
     // type 4 bytes
     // total len 4 bytes
     // interface id 4 bytes
@@ -47,7 +47,7 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
 
     const final_total_len = 4;
     const optionslen = total_len - fixed_meta_len - final_total_len;
-    const options = try block_option.loadoptions(file, optionslen, Options, alloc);
+    const options = .{ .bytes = try file.read(optionslen) };
     try BlockMeta.assert_final_total_len(try file.read(final_total_len), total_len);
 
     return BlockMeta.Block{ .isb = .{

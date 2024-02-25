@@ -4,3 +4,5 @@ zig-out
 zig-cache
 tags
 vgcore.*
+*.csv
+*.txt

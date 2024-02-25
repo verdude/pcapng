@@ -34,17 +34,17 @@ pub fn main() !u8 {
     var file = try PcapNGFile.load_file(filename, gpa);
     defer gpa.free(file.buf);
 
-    _ = try SHB.parse(&file, alloc);
+    _ = try SHB.parse(&file);
 
     while (true) {
         var tmp = try file.read_maybe(4) orelse break;
         // ehh
         file.pos -= 4;
         const block = switch (try BlockMeta.getblocktype(tmp[0..4])) {
-            BlockMeta.BlockType.shb => try SHB.parse(&file, alloc),
-            BlockMeta.BlockType.idb => try IDB.parse(&file, alloc),
-            BlockMeta.BlockType.epb => try EPB.parse(&file, alloc),
-            BlockMeta.BlockType.isb => try ISB.parse(&file, alloc),
+            BlockMeta.BlockType.shb => try SHB.parse(&file),
+            BlockMeta.BlockType.idb => try IDB.parse(&file),
+            BlockMeta.BlockType.epb => try EPB.parse(&file),
+            BlockMeta.BlockType.isb => try ISB.parse(&file),
         };
         _ = block;
     }

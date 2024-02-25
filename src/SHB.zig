@@ -1,12 +1,10 @@
 const SHB = @This();
 
 const std = @import("std");
-const mem = std.mem;
 const BlockMeta = @import("BlockMeta.zig");
 const block_option = @import("BlockOption.zig");
 const PcapNGFile = @import("pcapng_file.zig");
-const BlockOption = block_option.BlockOption;
-const BlockOptionType = block_option.BlockOptionType;
+const BlockOptions = block_option.BlockOptions;
 
 const Options = enum(u16) {
     shb_hardware = 2,
@@ -28,10 +26,10 @@ total_len: u32,
 magic: BlockMeta.Endianness,
 version: BlockMeta.PcapngVersion,
 section_length: i64,
-options: []const BlockOption(Options),
+options: BlockOptions,
 offset: u64,
 
-pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
+pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
     const offset = file.pos;
     const fixed_meta_len = 4 * 6;
     const final_total_len = 4;
@@ -46,8 +44,8 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
     };
     if (!version.supported()) {
         std.log.err(
-            "Unsupported Version in SHB: {s}!",
-            .{try version.tostring(alloc)},
+            "Unsupported Version in SHB: {any}!",
+            .{version},
         );
         return BlockMeta.MetaError.UnsupportedVersion;
     }
@@ -55,7 +53,7 @@ pub fn parse(file: *PcapNGFile, alloc: mem.Allocator) !BlockMeta.Block {
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
     std.log.debug("SHB Block Len: {d}", .{blocklen});
     const optionslen = blocklen - fixed_meta_len - final_total_len;
-    const options = try block_option.loadoptions(file, optionslen, Options, alloc);
+    const options = .{ .bytes = try file.read(optionslen) };
     try BlockMeta.assert_final_total_len(try file.read(final_total_len), blocklen);
 
     return BlockMeta.Block{ .shb = .{

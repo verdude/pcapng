@@ -11,6 +11,10 @@ const Type = enum(u16) {
     opt_custom_no_copy_octets = 19373,
 };
 
+pub const BlockOptions = struct {
+    bytes: []const u8,
+};
+
 pub fn BlockOptionType(comptime T: type) type {
     return union(enum) {
         common: Type,
@@ -85,22 +89,21 @@ pub fn loadoptions(
     file: *PcapNGFile,
     optionslen: u64,
     comptime T: type,
-    alloc: std.mem.Allocator,
-) ![]const BlockOption(T) {
-    const optionsbuf = try file.read(optionslen);
-    var options = std.ArrayList(BlockOption(T)).init(alloc);
+) !BlockOptions {
+    const block_options = .{
+        .bytes = try file.read(optionslen),
+    };
     var i: u64 = 0;
-    while (i < optionsbuf.len) {
-        const option = try loadoption(optionsbuf[i..], T);
+    while (i < block_options.bytes.len) {
+        const option = try loadoption(block_options.bytes[i..], T);
         if (option.length == 0) {
             std.log.debug("Found end of options.", .{});
             break;
         }
         i += option.length;
-        try options.append(option);
         option.print();
     }
-    return try options.toOwnedSlice();
+    return block_options;
 }
 
 test "paddedlen_bytes 0 should be 0" {
