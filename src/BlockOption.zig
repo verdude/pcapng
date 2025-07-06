@@ -107,7 +107,7 @@ pub fn loadoptions(
 }
 
 test "paddedlen_bytes 0 should be 0" {
-    var n = paddedlen_bytes(u16, 0);
+    const n = paddedlen_bytes(u16, 0);
     try std.testing.expectEqual(n, 0);
 }
 

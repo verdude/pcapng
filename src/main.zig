@@ -12,15 +12,14 @@ const args = @import("args.zig");
 pub const log_level: std.log.Level = .info;
 
 pub fn main() !u8 {
-    const len: u16 = 1024;
-    var buf = [1]u8{0} ** len;
-    var fba = FixedBufferAllocator.init(&buf);
-    const alloc = fba.allocator();
+    //const len: u16 = 1024;
+    //var buf = [1]u8{0} ** len;
+    //var fba = FixedBufferAllocator.init(&buf);
+    //const alloc = fba.allocator();
 
-    const filename = args.getfirstarg(alloc) orelse {
-        std.log.err("Missing arg.", .{});
-        return 1;
-    };
+    var a = args.init();
+    try a.parse();
+    const filename = a.file orelse return 1;
 
     var gpai = std.heap.GeneralPurposeAllocator(.{}){};
     const gpa = gpai.allocator();

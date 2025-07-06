@@ -1,7 +1,7 @@
 *.pcap
 *.pcapng
 zig-out
-zig-cache
+.zig-cache
 tags
 vgcore.*
 *.csv

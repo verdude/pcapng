@@ -53,7 +53,7 @@ pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
     const blocklen: u32 = @bitCast(fixed_meta[4..8].*);
     std.log.debug("SHB Block Len: {d}", .{blocklen});
     const optionslen = blocklen - fixed_meta_len - final_total_len;
-    const options = .{ .bytes = try file.read(optionslen) };
+    const options = BlockOptions{ .bytes = try file.read(optionslen) };
     try BlockMeta.assert_final_total_len(try file.read(final_total_len), blocklen);
 
     return BlockMeta.Block{ .shb = .{

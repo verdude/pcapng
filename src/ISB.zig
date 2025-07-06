@@ -47,7 +47,7 @@ pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
 
     const final_total_len = 4;
     const optionslen = total_len - fixed_meta_len - final_total_len;
-    const options = .{ .bytes = try file.read(optionslen) };
+    const options = BlockOptions{ .bytes = try file.read(optionslen) };
     try BlockMeta.assert_final_total_len(try file.read(final_total_len), total_len);
 
     return BlockMeta.Block{ .isb = .{

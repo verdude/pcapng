@@ -1,4 +1,4 @@
-const IDB = @This();
+const EPB = @This();
 
 const std = @import("std");
 const mem = std.mem;
@@ -7,6 +7,7 @@ const LinkType = @import("link_types.zig").LinkType;
 const block_option = @import("BlockOption.zig");
 const PcapNGFile = @import("pcapng_file.zig");
 const BlockOptions = block_option.BlockOptions;
+const packet_meta = @import("packet_meta.zig");
 
 total_len: u32,
 interface_id: u32,
@@ -28,6 +29,20 @@ const Options = enum(u16) {
     epb_verdict = 7, // variable, minimum verdict type-dependent yes
     _,
 };
+
+const Flags = struct {
+    direction: packet_meta.Direction,
+    reception_type: packet_meta.ReceptionType,
+    error_word: u16,
+
+    pub fn print_errors(_: *Flags) void {}
+
+    pub fn has_error(_: *Flags) bool {
+        return false;
+    }
+};
+
+pub fn get_flags(_: *EPB) !Flags {}
 
 pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
     // type 4 bytes
@@ -55,7 +70,7 @@ pub fn parse(file: *PcapNGFile) !BlockMeta.Block {
     const data = try file.read(data_len);
     const final_total_len = 4;
     const optionslen = total_len - fixed_meta_len - data_len - final_total_len;
-    const options = .{ .bytes = try file.read(optionslen) };
+    const options = BlockOptions{ .bytes = try file.read(optionslen) };
     try BlockMeta.assert_final_total_len(try file.read(final_total_len), total_len);
 
     return BlockMeta.Block{ .epb = .{
